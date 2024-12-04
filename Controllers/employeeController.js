@@ -2,8 +2,17 @@ import Employee from "../Models/employeeSchema.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import nodemailer from "nodemailer";
 
 dotenv.config();
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
 
 export const registerEmployee = async (req, res) => {
   try {
@@ -17,6 +26,26 @@ export const registerEmployee = async (req, res) => {
       role,
     });
     await newEmployee.save();
+
+    const resetUrl = `https://remarkable-klepon-d9704b.netlify.app/login`;
+    const mailOptions = {
+      from: process.env.EMAIL,
+      to: newEmployee.email,
+      subject: "Welcome to Our Platform",
+      html: `<p>Hi ${username},</p>
+             <p>Welcome to our platform! You can log in using the link below:</p>
+             <p><a href="${resetUrl}">Click here to log in</a></p>
+             <p>Thank you for joining us!</p>`,
+    };
+
+    // Wrap email sending in a try-catch block
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log("Welcome email sent successfully.");
+    } catch (emailError) {
+      console.error("Error sending welcome email:", emailError);
+    }
+
     res.status(200).json({ message: "Register Successful", data: newEmployee });
   } catch (error) {
     console.log(error);
